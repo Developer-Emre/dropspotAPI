@@ -20,6 +20,10 @@ export const signupValidation = [
     .withMessage('Password must be at least 8 characters long')
     .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
     .withMessage('Password must contain at least one lowercase letter, one uppercase letter, and one number'),
+  body('role')
+    .optional()
+    .isIn(['USER', 'ADMIN'])
+    .withMessage('Role must be either USER or ADMIN'),
 ];
 
 export const loginValidation = [

@@ -22,6 +22,7 @@ export interface SignupRequest {
   name: string;
   surname: string;
   password: string;
+  role?: 'USER' | 'ADMIN';
 }
 
 export interface LoginRequest {
