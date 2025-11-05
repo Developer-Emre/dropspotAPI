@@ -34,6 +34,8 @@ model Drop {
   imageUrl          String?
   totalStock        Int
   claimedStock      Int         @default(0)
+  startDate         DateTime
+  endDate           DateTime
   claimWindowStart  DateTime
   claimWindowEnd    DateTime
   isActive          Boolean     @default(true)
