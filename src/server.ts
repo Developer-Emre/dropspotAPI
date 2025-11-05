@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth';
+import dropRoutes from './routes/drops';
 
 // Load environment variables
 dotenv.config();
@@ -43,6 +44,7 @@ app.get('/health', (req, res) => {
 
 // Routes
 app.use('/auth', authRoutes);
+app.use('/drops', dropRoutes);
 
 // 404 handler
 app.use('*', (req, res) => {
