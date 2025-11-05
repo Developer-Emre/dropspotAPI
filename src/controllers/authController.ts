@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { validationResult } from 'express-validator';
 import { AuthService } from '../services/authService';
 import { SignupRequest, LoginRequest, ApiResponse } from '../types';
+import { UserRole } from '@prisma/client';
 import prisma from '../utils/db';
 
 export class AuthController {
@@ -17,7 +18,7 @@ export class AuthController {
         return;
       }
 
-      const { email, name, surname, password }: SignupRequest = req.body;
+      const { email, name, surname, password, role }: SignupRequest = req.body;
 
       // Check if user already exists
       const existingUser = await prisma.user.findUnique({
@@ -32,6 +33,25 @@ export class AuthController {
         return;
       }
 
+      // Determine user role - only allow ADMIN in development or with admin secret
+      let userRole: UserRole = UserRole.USER;
+      if (role === 'ADMIN') {
+        // Check if this is development environment OR admin secret is provided
+        const isDevEnvironment = process.env.NODE_ENV === 'development';
+        const adminSecret = req.headers['x-admin-secret'] as string;
+        const validAdminSecret = process.env.ADMIN_SECRET || 'dev-admin-secret';
+        
+        if (isDevEnvironment || adminSecret === validAdminSecret) {
+          userRole = UserRole.ADMIN;
+        } else {
+          res.status(403).json({
+            success: false,
+            error: 'Unauthorized to create admin user'
+          } as ApiResponse);
+          return;
+        }
+      }
+
       // Hash password and create user
       const passwordHash = await AuthService.hashPassword(password);
       
@@ -41,7 +61,7 @@ export class AuthController {
           name: name.trim(),
           surname: surname.trim(),
           passwordHash,
-          role: 'USER'
+          role: userRole
         },
         select: {
           id: true,
