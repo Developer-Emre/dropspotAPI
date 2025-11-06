@@ -5,7 +5,10 @@ import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth';
 import dropRoutes from './routes/drops';
+import waitlistRoutes from './routes/waitlist';
 import claimRoutes from './routes/claim';
+import userRoutes from './routes/user';
+import { globalErrorHandler, notFoundHandler } from './middleware/errorHandler';
 
 // Load environment variables
 dotenv.config();
@@ -46,28 +49,16 @@ app.get('/health', (req, res) => {
 // Routes
 app.use('/auth', authRoutes);
 app.use('/drops', dropRoutes);
+app.use('/drops', waitlistRoutes);
 app.use('/drops', claimRoutes);
 app.use('/', claimRoutes); // For /my-claims endpoint
+app.use('/', userRoutes); // For /my-waitlists endpoint
 
-// 404 handler
-app.use('*', (req, res) => {
-  res.status(404).json({
-    success: false,
-    error: 'Endpoint not found'
-  });
-});
+// 404 handler for undefined routes
+app.use('*', notFoundHandler);
 
-// Global error handler
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error('Global error:', err);
-  
-  res.status(err.status || 500).json({
-    success: false,
-    error: process.env.NODE_ENV === 'production' 
-      ? 'Internal server error' 
-      : err.message || 'Something went wrong'
-  });
-});
+// Global error handler (must be last middleware)
+app.use(globalErrorHandler);
 
 // Start server
 const server = app.listen(PORT, () => {

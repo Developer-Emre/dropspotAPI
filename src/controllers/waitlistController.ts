@@ -232,4 +232,39 @@ export class WaitlistController {
       });
     }
   }
+
+  /**
+   * GET /my-waitlists - Get all user's waitlist entries with positions
+   */
+  public static async getMyWaitlists(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const userId = req.user!.userId;
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = Math.min(parseInt(req.query.limit as string) || 20, 50);
+
+      // Get all user's waitlist entries with drop details and positions
+      const result = await WaitlistService.getUserWaitlists(userId, page, limit);
+
+      res.status(200).json({
+        success: true,
+        data: {
+          waitlists: result.entries,
+          pagination: result.pagination,
+          summary: {
+            totalActive: result.summary.totalActive,
+            totalClaimable: result.summary.totalClaimable,
+            totalCompleted: result.summary.totalCompleted
+          }
+        }
+      });
+
+    } catch (error: any) {
+      console.error('Error fetching user waitlists:', error);
+
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error while fetching waitlists'
+      });
+    }
+  }
 }
