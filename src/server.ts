@@ -5,6 +5,7 @@ import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import authRoutes from './routes/auth';
 import dropRoutes from './routes/drops';
+import claimRoutes from './routes/claim';
 
 // Load environment variables
 dotenv.config();
@@ -45,6 +46,8 @@ app.get('/health', (req, res) => {
 // Routes
 app.use('/auth', authRoutes);
 app.use('/drops', dropRoutes);
+app.use('/drops', claimRoutes);
+app.use('/', claimRoutes); // For /my-claims endpoint
 
 // 404 handler
 app.use('*', (req, res) => {
