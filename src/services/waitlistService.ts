@@ -353,4 +353,90 @@ export class WaitlistService {
       }
     };
   }
+
+  /**
+   * Get all user's waitlist entries with drop details and positions
+   */
+  public static async getUserWaitlists(userId: string, page: number = 1, limit: number = 20) {
+    const skip = (page - 1) * limit;
+
+    // Get user's waitlist entries with drop details
+    const [entries, total] = await Promise.all([
+      prisma.waitlistEntry.findMany({
+        where: { userId },
+        include: {
+          drop: {
+            select: {
+              id: true,
+              title: true,
+              description: true,
+              totalStock: true,
+              claimedStock: true,
+              startDate: true,
+              endDate: true,
+              claimWindowStart: true,
+              claimWindowEnd: true,
+              isActive: true,
+              createdAt: true
+            }
+          }
+        },
+        orderBy: { joinedAt: 'desc' }, // Most recent first
+        skip,
+        take: limit
+      }),
+      prisma.waitlistEntry.count({
+        where: { userId }
+      })
+    ]);
+
+    // Calculate positions for each entry
+    const entriesWithPositions = await Promise.all(
+      entries.map(async (entry) => {
+        const position = await this.getWaitlistPosition(userId, entry.dropId);
+        
+        // Determine status
+        let status = 'waiting';
+        const now = new Date();
+        
+        if (!entry.drop.isActive) {
+          status = 'inactive';
+        } else if (entry.drop.claimWindowStart && now >= entry.drop.claimWindowStart && now <= entry.drop.claimWindowEnd) {
+          status = 'claimable';
+        } else if (entry.drop.endDate && now > entry.drop.endDate) {
+          status = 'ended';
+        } else if (entry.drop.claimedStock >= entry.drop.totalStock) {
+          status = 'sold_out';
+        }
+
+        return {
+          ...entry,
+          position: position || 0,
+          status,
+          canClaim: status === 'claimable' && (position || 0) <= (entry.drop.totalStock - entry.drop.claimedStock),
+          estimatedClaimTime: entry.drop.claimWindowStart
+        };
+      })
+    );
+
+    // Calculate summary statistics
+    const summary = {
+      totalActive: entriesWithPositions.filter(e => e.status === 'waiting').length,
+      totalClaimable: entriesWithPositions.filter(e => e.status === 'claimable' && e.canClaim).length,
+      totalCompleted: entriesWithPositions.filter(e => ['ended', 'sold_out', 'inactive'].includes(e.status)).length
+    };
+
+    return {
+      entries: entriesWithPositions,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+        hasNext: skip + limit < total,
+        hasPrev: page > 1
+      },
+      summary
+    };
+  }
 }
