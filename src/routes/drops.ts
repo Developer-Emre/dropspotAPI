@@ -23,6 +23,14 @@ router.get('/', DropController.getActiveDrops);
 // GET /admin/drops - List all drops for admin management
 router.get('/admin', authenticate, requireAdmin, DropController.getAllDrops);
 
+// GET /admin/drops/:id - Get specific drop details for admin
+router.get('/admin/:id', 
+  authenticate, 
+  requireAdmin, 
+  dropIdValidation, 
+  DropController.getDropById
+);
+
 // POST /admin/drops - Create new drop
 router.post('/admin', 
   authenticate, 

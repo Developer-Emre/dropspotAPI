@@ -73,7 +73,7 @@ export class DropController {
   }
 
   /**
-   * POST /admin/drops - Create new drop (Admin only)
+   * POST /drops/admin - Create new drop (Admin only)
    */
   public static async createDrop(req: AuthRequest, res: Response): Promise<void> {
     try {
@@ -130,7 +130,7 @@ export class DropController {
   }
 
   /**
-   * PUT /admin/drops/:id - Update drop (Admin only)
+   * PUT /drops/admin/:id - Update drop (Admin only)
    */
   public static async updateDrop(req: AuthRequest, res: Response): Promise<void> {
     try {
@@ -191,7 +191,7 @@ export class DropController {
   }
 
   /**
-   * DELETE /admin/drops/:id - Delete drop (Admin only)
+   * DELETE /drops/admin/:id - Delete drop (Admin only)
    */
   public static async deleteDrop(req: AuthRequest, res: Response): Promise<void> {
     try {
@@ -243,7 +243,7 @@ export class DropController {
   }
 
   /**
-   * GET /admin/drops - List all drops for admin (Admin only)
+   * GET /drops/admin - List all drops for admin (Admin only)
    */
   public static async getAllDrops(req: AuthRequest, res: Response): Promise<void> {
     try {
@@ -279,6 +279,89 @@ export class DropController {
       res.status(500).json({
         success: false,
         message: 'Internal server error while fetching drops'
+      });
+    }
+  }
+
+  /**
+   * GET /drops/admin/:id - Get specific drop details for admin (Admin only)
+   */
+  public static async getDropById(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+
+      const drop = await prisma.drop.findUnique({
+        where: { id },
+        include: {
+          waitlistEntries: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  email: true,
+                  name: true,
+                  surname: true
+                }
+              }
+            },
+            orderBy: {
+              joinedAt: 'asc'
+            }
+          },
+          claims: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  email: true,
+                  name: true,
+                  surname: true
+                }
+              }
+            },
+            orderBy: {
+              claimedAt: 'desc'
+            }
+          },
+          _count: {
+            select: {
+              waitlistEntries: true,
+              claims: true
+            }
+          }
+        }
+      });
+
+      if (!drop) {
+        res.status(404).json({
+          success: false,
+          message: 'Drop not found'
+        });
+        return;
+      }
+
+      const dropWithStats = {
+        ...drop,
+        availableStock: drop.totalStock - drop.claimedStock,
+        waitlistCount: (drop as any)._count.waitlistEntries,
+        claimsCount: (drop as any)._count.claims,
+        // Add position numbers to waitlist entries
+        waitlistEntries: (drop as any).waitlistEntries.map((entry: any, index: number) => ({
+          ...entry,
+          position: index + 1
+        }))
+      };
+
+      res.json({
+        success: true,
+        data: dropWithStats
+      });
+
+    } catch (error) {
+      console.error('Error fetching drop:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error while fetching drop'
       });
     }
   }
