@@ -19,9 +19,19 @@ export const createDropValidation = [
     .withMessage('Description must be between 10 and 2000 characters'),
 
   body('imageUrl')
-    .optional()
-    .isURL()
-    .withMessage('Invalid image URL format'),
+    .optional({ nullable: true })
+    .custom((value) => {
+      // Allow null, undefined, or empty string
+      if (!value || value === null || value === '') {
+        return true;
+      }
+      // If value exists, validate it's a proper URL
+      const urlRegex = /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/i;
+      if (!urlRegex.test(value)) {
+        throw new Error('Invalid image URL format');
+      }
+      return true;
+    }),
 
   body('totalStock')
     .notEmpty()
@@ -117,9 +127,19 @@ export const updateDropValidation = [
     .withMessage('Description must be between 10 and 2000 characters'),
 
   body('imageUrl')
-    .optional()
-    .isURL()
-    .withMessage('Invalid image URL format'),
+    .optional({ nullable: true })
+    .custom((value) => {
+      // Allow null, undefined, or empty string
+      if (!value || value === null || value === '') {
+        return true;
+      }
+      // If value exists, validate it's a proper URL
+      const urlRegex = /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/i;
+      if (!urlRegex.test(value)) {
+        throw new Error('Invalid image URL format');
+      }
+      return true;
+    }),
 
   body('totalStock')
     .optional()
