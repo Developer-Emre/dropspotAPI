@@ -1,0 +1,95 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String   @id @default(cuid())
+  email             String   @unique
+  name              String
+  surname           String
+  passwordHash      String
+  role              UserRole @default(USER)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  // Relationships
+  waitlistEntries   WaitlistEntry[]
+  claims            Claim[]
+  
+  @@map("users")
+}
+
+model Drop {
+  id                String      @id @default(cuid())
+  title             String
+  description       String
+  imageUrl          String?
+  totalStock        Int
+  claimedStock      Int         @default(0)
+  startDate         DateTime
+  endDate           DateTime
+  claimWindowStart  DateTime
+  claimWindowEnd    DateTime
+  isActive          Boolean     @default(true)
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  
+  // Relationships
+  waitlistEntries   WaitlistEntry[]
+  claims            Claim[]
+  
+  @@map("drops")
+}
+
+model WaitlistEntry {
+  id              String    @id @default(cuid())
+  userId          String
+  dropId          String
+  joinedAt        DateTime  @default(now())
+  priorityScore   Int?
+  
+  // Relationships
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  drop            Drop      @relation(fields: [dropId], references: [id], onDelete: Cascade)
+  
+  // Prevent duplicate entries
+  @@unique([userId, dropId])
+  @@map("waitlist_entries")
+}
+
+model Claim {
+  id              String      @id @default(cuid())
+  userId          String
+  dropId          String
+  claimCode       String      @unique
+  status          ClaimStatus @default(PENDING)
+  claimedAt       DateTime    @default(now())
+  expiresAt       DateTime
+  
+  // Relationships
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  drop            Drop        @relation(fields: [dropId], references: [id], onDelete: Cascade)
+  
+  // Prevent duplicate claims per user per drop
+  @@unique([userId, dropId])
+  @@map("claims")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum ClaimStatus {
+  PENDING
+  COMPLETED
+  EXPIRED
+}
