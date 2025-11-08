@@ -9,6 +9,7 @@ import waitlistRoutes from './routes/waitlist';
 import claimRoutes from './routes/claim';
 import userRoutes from './routes/user';
 import { globalErrorHandler, notFoundHandler } from './middleware/errorHandler';
+import { SeedGenerator } from './utils/seedGenerator';
 
 // Load environment variables
 dotenv.config();
@@ -65,6 +66,15 @@ const server = app.listen(PORT, () => {
   console.log(`🚀 DropSpot API server running on port ${PORT}`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔗 Health check: http://localhost:${PORT}/health`);
+  
+  // Initialize seed generator
+  try {
+    const seedGenerator = SeedGenerator.getInstance();
+    const seedData = seedGenerator.generateSeed();
+    console.log(`🌱 Seed initialized: ${seedData.seed}`);
+  } catch (error) {
+    console.error('❌ Failed to initialize seed generator:', error);
+  }
 });
 
 // Graceful shutdown
